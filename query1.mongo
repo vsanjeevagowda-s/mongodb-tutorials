@@ -1,0 +1,16 @@
+// db.users.aggregate([
+//   {
+//     $match: {
+//       gender: "female"
+//     }
+//   },
+//   {
+//     $group: {
+//       _id: { state: "$location.state" },
+//       totalPersons: { $sum: 1 }
+//     }
+//   }
+// ]).pretty()
+
+// db.users.findOne()
+db.users.find()
