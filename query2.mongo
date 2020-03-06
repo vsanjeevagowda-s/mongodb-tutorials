@@ -1,0 +1,270 @@
+
+// =======================================
+db.screenshots.createIndex({ created_date: -1 })
+// ==========================================
+db.screenshots.getIndexes();
+// =======================================
+db.screenshots.find({ _id: ObjectId("5e5fab1736f3fb00246f01df") }).pretty()
+// =======================================
+
+db.screenshots.aggregate([
+  {
+    "$limit": 1
+  }
+]).pretty()
+// =======================================
+db.devices.count();
+// =======================================
+
+db.devices.aggregate([
+  {
+    "$project": {
+      name: 1,
+      recent_screenshot: 1
+    }
+  }
+]).pretty()
+// =======================================
+
+db.devices.aggregate([
+  {
+    $lookup: {
+      from: 'screenshots',
+      let: {
+        recent_screenshot_id: "$recent_screenshot"
+      },
+      pipeline: [
+        {
+          $match:{
+            $expr:{
+              $eq:["$$recent_screenshot_id", "$_id"]
+            }
+          }
+        }
+      ],
+      as: "recent_screenshot"
+    }
+  },
+  {
+    $unwind: "$recent_screenshot"
+  },
+  {
+    "$project": {
+      name: 1,
+      recent_screenshot: 1
+    }
+  }
+]).pretty()
+// =======================================
+
+db.screenshots.count();
+// =======================================
+
+db.devices.updateMany({}, {
+  $set:{ recent_screenshot:  ObjectId("5e5c4eeec3335800247963ed")  }
+})
+
+// =================================================
+db.devices.aggregate([
+  {
+    $limit: 12
+  },
+  {
+    "$lookup": {
+      from: "screenshots",
+      let: { mydeviceId: '$_id', currentDate: ISODate() },
+      pipeline:[
+        {
+          $match: {
+            $expr:{
+              $eq:[ "$device", "$$mydeviceId" ]
+            }
+          }
+        },
+        {
+          $match:{
+            $expr:{
+              $lte: ["$created_date", "$$currentDate"]
+            }
+          }
+        },
+        {
+          $limit: 1
+        },
+        { $unwind: "$images" },
+        {
+          $project:{
+            _id: 1,
+            currentDate: "$$currentDate",
+           image_path: "$images.path",
+            created_date:1
+          }
+        }
+      ],
+      as: "newScreenshot"
+    }
+  },
+  {
+    "$project": {
+      name: 1, 
+      recent_screenshot: { 
+        $cond : {
+          if: {
+            $eq: [{$size: "$newScreenshot"}, 0]
+          },
+          then: 0,
+          else: "$newScreenshot"
+        } 
+      }
+    }
+  },
+  {
+    "$unwind": "$recent_screenshot"
+  }
+]).pretty()
+
+// ===================================
+db.devices.aggregate([
+  {
+    "$lookup": {
+      from: "screenshots",
+      let: { mydeviceId: '$_id', currentDate: ISODate() },
+      pipeline:[
+        {
+          $match: {
+            $and:[
+              {
+                $expr:{
+                  $eq:[ '$device', '$$mydeviceId' ]
+                }
+              },
+              {
+                created_date: { $gte: "$$currentDate" }
+              }
+            ]
+          }
+        },
+        {
+          $limit: 1
+        },
+        { $unwind: "$images" },
+        {
+          $project:{
+            _id: 1,
+            currentDate: "$$currentDate",
+           image_path: "$images.path",
+            created_date:1
+          }
+        }
+      ],
+      as: "newScreenshot"
+    }
+  },
+  {
+    "$project": {
+      name: 1, 
+      recent_screenshot: { 
+        $cond : {
+          if: {
+            $eq: [{$size: "$newScreenshot"}, 0]
+          },
+          then: 0,
+          else: "$newScreenshot"
+        } 
+      }
+    }
+  },
+  {
+    "$unwind": "$recent_screenshot"
+  }
+]).pretty()
+// ======================
+
+db.devices.find().pretty()
+
+db.devices.aggregate([
+  {
+    $limit: 12
+  },
+  {
+    "$lookup": {
+      from: "screenshots",
+      let: { mydeviceId: '$_id' },
+      pipeline:[
+        {
+          $match: {
+              $expr:{
+                $eq:[ '$device', '$$mydeviceId' ]
+              }
+          }
+        },
+        {
+          $sort:{ "created_date": -1 }
+        },
+        {
+          $limit: 1
+        }
+      ],
+      as: "newScreenshot"
+    }
+  },
+	{ 
+    $project: { 
+      name: 1, 
+      recent_screenshot: "$newScreenshot" 
+    } 
+  }
+]).pretty()
+
+// =======================
+// db.devices.aggregate([
+//   { $project: { name: 1 } },
+//   { $lookup: {
+//     from: "screenshots",
+//     localField:"_id",
+//     foreignField: "device",
+//     as: "newscreenshots",
+//     } 
+//   }
+// ]).pretty()
+
+// // ===================
+
+// db.devices.aggregate([
+//   {
+//     $match: {}
+//   },
+//   {
+//     "$limit": 1
+//   }
+// ]).pretty()
+
+// // ===================
+
+// db.screenshots.aggregate([
+//   {
+//     $match: {}
+//   }
+// ]).pretty()
+// // ===============
+// db.devices.aggregate([
+//     {
+//     "$project": {
+//       name: 'devices list'
+//     }
+//   },
+//   {
+//     "$match": {
+//     }
+//   }
+// ])
+// =============================================================
+db.screenshots.aggregate([
+  {
+    "$group": {
+      _id: "$device"
+    }
+  }
+])
+
+db.screenshots.find({ device_id: "5dfcc526916e3e00244e5326" }).count()

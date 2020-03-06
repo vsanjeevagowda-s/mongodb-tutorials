@@ -93,12 +93,12 @@
 // { "_id" : 5, "item" : "xyz", "price" : 5, "quantity" : 10, "date" : ISODate("2014-02-15T09:12:00Z") }
 // ])
 // ======================
-// db.sales.aggregate([
-//   { 
-//     $group:{
-//       _id: { price: "$price" },
-//       items: { $push: "$item" }
-//     }  
-//    }
-// ])
+db.sales.aggregate([
+  { 
+    $group:{
+      _id: { price: "$price" },
+      items: { $push: "$item" }
+    }  
+   }
+])
 // ======================
